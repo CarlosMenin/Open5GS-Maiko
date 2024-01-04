@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: open5gs-my5grantester03
+  namespace: open5gs
+  labels:
+    epc-mode: my5grantester03
+spec:
+  selector:
+    epc-mode: my5grantester03
+  ports:
+    - name: open5gs-my5grantester03-tcp-80
+      protocol: TCP
+      port: 80
+    - name: open5gs-my5grantester03-tcp-3000
+      protocol: TCP
+      port: 3000
+    - name: open5gs-my5grantester03-tcp-9100
+      protocol: TCP
+      port: 9100
+      targetPort: 9100
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: open5gs-my5grantester03
+  namespace: open5gs
+  labels:
+    epc-mode: my5grantester03
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      epc-mode: my5grantester03
+  template:
+    metadata:
+      labels:
+        epc-mode: my5grantester03
+    spec:
+      nodeSelector:
+        # kubernetes.io/arch: amd64
+        kubernetes.io/hostname: petshopboys
+      containers:
+        - name: my5grantester
+          image: carlosmenin/my5grantester:v2.0.0
+          env:
+            - name: NGAP_LOCAL_ADDR
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: GTPU_LOCAL_ADDR
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: MCC
+              value: "999"
+            - name: MNC
+              value: "70"
+            - name: TAC
+              value: "000001"
+            - name: GNBID
+              value: "000003"
+            - name: SST_GNB
+              value: "03"
+            - name: SD
+              value: "000003"
+            - name: MSIN
+              value: "0000000200"
+            - name: KEY
+              value: 465B5CE8B199B49FAA5F0A2EE238A6BC
+            - name: OPC
+              value: E8ED289DEBA952E4283B54E88E6183CA
+            - name: AMF
+              value: "8000"
+            - name: SQN
+              value: "0000000"
+            - name: DNN
+              value: slice03
+            - name: SST_UE
+              value: "000003"
+            - name: NUM_UE
+              value: "1"
+            - name: NGAP_REMOTE_ADDR
+              value: open5gs-amf
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - SYS_MODULE
+            privileged: true
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: open5gs-my5grantester03
+  namespace: open5gs
+  labels:
+    epc-mode: my5grantester03
+spec:
+  selector:
+    matchLabels:
+      epc-mode: my5grantester03
+  endpoints:
+    - interval: 30s
+      port: open5gs-my5grantester03-tcp-9100
+---
